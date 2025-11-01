@@ -2,6 +2,7 @@
 #define BOARD_H
 #include <pybind11/pybind11.h>
 #include <map>
+#include <vector>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -27,11 +28,14 @@ public:
 	State turn;
 
 	py::tuple isTerminal();
+	std::vector<int> legalMoves();
 
 	static int moveToIndex(py::tuple move);
 	static py::tuple indexToMove(int index);
 
 	Board();
 	Board(const Board& aBoard);
+private:
+	std::vector<py::tuple> arrows(py::tuple amazon, int row, int col);
 };
 #endif

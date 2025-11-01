@@ -23574,6 +23574,80 @@ py::tuple Board::isTerminal()
 	}
 	return py::make_tuple(true, winner);
 }
+std::vector<int> Board::legalMoves()
+{
+	vector<int> moves;
+	py::tuple amazons[4];
+	if (turn == S::BLACK)
+	{
+		amazons = blackAmazons;
+	}
+	else
+	{
+		amazons = whiteAmazons;
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			int row = amazons[i][0];
+			int col = amazons[i][1];
+			while (true)
+			{
+				row += rowDirection[i];
+				col += colDirection[i];
+				if (row < 0 || row > 9 || col < 0 || col > 9)
+				{
+					break;
+				}
+				if (board[newRow][newCol] == S::EMPTY)
+				{
+					std::vector<py::tuple> arrs = arrows(amazon[i], row, col);
+					for (auto arr : arrs)
+					{
+						moves.push_back(Board::moveToIndex(py::make_tuple(i, py::make_tuple(row, col), arr)));
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
+	return moves;
+}
+std::vector<py::tuple> Board::arrows(py::tuple amazon, int row, int col)
+{
+	std::vector<py::tuple> arrs;
+	S newBoard[10][10];
+	newBoard = board;
+	newBoard[amazon[0]][amazon[1]] = S::EMPTY;
+	for (int i = 0; i < 8; i++)
+	{
+		int newRow = row;
+		int newCol = col;
+		while (true)
+		{
+			newRow += rowDirection[i];
+			newCol += colDirection[i];
+			if (newRow < 0 || newRow > 9 || newCol < 0 || newCol > 9)
+			{
+				break;
+			}
+			if (newBoard[newRow][newCol] == S::EMPTY)
+			{
+				arrs.push_back(py::make_tuple(newRow, newCol));
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	return arrs;
+}
+
 
 Board::Board()
 {
