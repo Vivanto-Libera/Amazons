@@ -11,6 +11,9 @@ class Board
 public:
 	static const std::map<py::tuple, int> moveToIndexMap;
 	static const std::map<int, py::tuple> indexToMoveMap;
+	static const int rowDirection[8];
+	static const int colDirection[8];
+
 	enum State
 	{
 		EMPTY,
@@ -22,6 +25,8 @@ public:
 	py::tuple blackAmazons[4];
 	py::tuple whiteAmazons[4];
 	State turn;
+
+	py::tuple isTerminal();
 
 	static int moveToIndex(py::tuple move);
 	static py::tuple indexToMove(int index);

@@ -3,7 +3,7 @@
 using S = Board::State;
 
 //(Amazon, the squeare moved, the arrow placed)
-const std::map<py::tuple, int> moveToIndexMap =
+const std::map<py::tuple, int> Board::moveToIndexMap =
 {
 	{py::make_tuple(0, py::make_tuple(0, 0), py::make_tuple(0, 1)), 0},
 	{py::make_tuple(0, py::make_tuple(0, 0), py::make_tuple(0, 2)), 1},
@@ -11767,7 +11767,7 @@ const std::map<py::tuple, int> moveToIndexMap =
 	{py::make_tuple(3, py::make_tuple(9, 9), py::make_tuple(0, 0)), 11759},
 
 };
-const std::map<int, py::tuple> indexToMoveMap =
+const std::map<int, py::tuple> Board::indexToMoveMap =
 {
 	{0, py::make_tuple(0, py::make_tuple(0, 0), py::make_tuple(0, 1))},
 	{1, py::make_tuple(0, py::make_tuple(0, 0), py::make_tuple(0, 2))},
@@ -23531,6 +23531,49 @@ const std::map<int, py::tuple> indexToMoveMap =
 	{11759, py::make_tuple(3, py::make_tuple(9, 9), py::make_tuple(0, 0))},
 
 };
+const int Board::rowDirection[8]{ -1, -1, 0, 1, 1, 1, 0, -1 };
+const int Board::colDirection[8]{ 0, 1, 1, 1, 0, -1, -1, -1 };
+
+py::tuple Board::isTerminal()
+{
+	py::tuple amazons[4];
+	if (turn == S::BLACK)
+	{
+		amazons = blackAmazons;
+	}
+	else
+	{
+		amazons = whiteAmazons;
+	}
+	for (auto amazon : amazons)
+	{
+		int row = amazon[0];
+		int col = amazon[1];
+		for (int i = 0; i < 8; i++)
+		{
+			int newRow = row + Board::rowDirection[i];
+			int newCol = col + Board::colDirection[i];
+			if (newRow < 0 || newRow > 9 || newCol < 0 || newCol > 9)
+			{
+				continue;
+			}
+			if (board[newRow][newCol] == S::EMPTY)
+			{
+				return py::make_tuple(false, py::none());
+			}
+		}
+	}
+	S winner;
+	if (turn == S::BLACK)
+	{
+		winner = S::WHITE;
+	}
+	else
+	{
+		winner = S::BLACK;
+	}
+	return py::make_tuple(true, winner);
+}
 
 Board::Board()
 {
