@@ -12,15 +12,11 @@ endif()
 project ("Amazons_CPP")
 set(PYBIND11_FINDPYTHON ON)
 add_subdirectory(extern/pybind11)
-pybind11_add_module(Amazons Board.h Board.cpp)
+pybind11_add_module(Amazons main.cpp Board.cpp)
 install (TARGETS Amazons DESTINATION .)
 
 
-set(Torch_DIR ${CMAKE_SOURCE_DIR}/extern/libtorch/share/cmake/Torch)
-find_package(Torch REQUIRED)
-
 # Add source to this project's executable.
-target_link_libraries(Amazons PRIVATE "${TORCH_LIBRARIES}")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Amazons PROPERTY CXX_STANDARD 20)
