@@ -29,6 +29,7 @@ PYBIND11_MODULE(Amazons, m)
 				}
 				return ls;
 			})
-		.def_static("stringToIndex", &Board::stringToIndex)
+		.def_static("indexToMove", &Board::indexToMove)
+		.def_static("moveToIndex", &Board::moveToIndex)
 		.def_readwrite("turn", &Board::turn);
 };

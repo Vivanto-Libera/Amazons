@@ -1,6 +1,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <map>
 #include <vector>
 #include <string>
@@ -12,8 +13,6 @@ using namespace pybind11::literals;
 class Board
 {
 public:
-	static const std::map<std::string, int> moveToIndexMap;
-	static const std::map<int, std::string> indexToMoveMap;
 	static const int rowDirection[8];
 	static const int colDirection[8];
 
@@ -34,9 +33,8 @@ public:
 	void applyMove(int index);
 	py::tuple neuralworkInput();
 
-	static std::string intToString(int moveIndex[]);
-	static std::array<int,5> stringToInt(std::string str);
-	static int stringToIndex(std::string str);
+	static int moveToIndex(int fromR, int fromC, int toR, int toC, int arrR, int arrC);
+	static std::array<int, 6> indexToMove(int index);
 	static int locationToIndex(int x, int y);
 	static std::array<int, 2> indextoLocation(int index);
 
