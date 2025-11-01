@@ -78,8 +78,8 @@ std::vector<int> Board::legalMoves()
 			int col = rowAndCol[1];
 			while (true)
 			{
-				row += rowDirection[i];
-				col += colDirection[i];
+				row += rowDirection[j];
+				col += colDirection[j];
 				if (row < 0 || row > 9 || col < 0 || col > 9)
 				{
 					break;

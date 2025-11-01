@@ -118,7 +118,7 @@ class MCTS():
 
     def search(self, rootNode):
         self.rootNode = rootNode
-        _ = self.rootNode.expand(self.network)
+        self.rootNode.expand(self.network)
         for i in range(0, self.times):
             selected_node = self.select(rootNode)
             self.expandAndEvaluate(selected_node)
