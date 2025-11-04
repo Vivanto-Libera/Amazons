@@ -31,7 +31,7 @@ class Node():
             childNode = Node(child_board, child_edge)
             self.childEdgeNode.append((child_edge,childNode))
         network.eval()
-        device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device= torch.device("cpu")
         network = network.to(device)
         board_state = torch.FloatTensor(self.board.neuralworkInput()).unsqueeze(0)
         board_state = board_state.to(device)

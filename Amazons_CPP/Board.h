@@ -23,7 +23,7 @@ public:
 		BLACK=1,
 		ARROW=2,
 	};
-	State board[10][10];
+	std::array<std::array<State, 10>, 10>board;
 	int blackAmazons[4];
 	int whiteAmazons[4];
 	State turn;

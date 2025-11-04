@@ -11,7 +11,7 @@ class Agent():
         rootEdge = mcts.Edge(None, None)
         rootEdge.N = 1
         rootNode = mcts.Node(board, rootEdge)
-        mctsSearcher = mcts.MCTS(self.model, 10)
+        mctsSearcher = mcts.MCTS(self.model, 50)
         moveProbs = mctsSearcher.search(rootNode)
         outputVec = {}
         for (move, prob) in moveProbs:

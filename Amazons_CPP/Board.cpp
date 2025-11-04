@@ -7,20 +7,14 @@ const int Board::colDirection[8]{ 0, 1, 1, 1, 0, -1, -1, -1 };
 
 S Board::isTerminal()
 {
-	int amazons[4];
+	int* amazons;
 	if (turn == S::BLACK)
 	{
-		amazons[0] = blackAmazons[0];
-		amazons[1] = blackAmazons[1];
-		amazons[2] = blackAmazons[2];
-		amazons[3] = blackAmazons[3];
+		amazons = blackAmazons;
 	}
 	else
 	{
-		amazons[0] = whiteAmazons[0];
-		amazons[1] = whiteAmazons[1];
-		amazons[2] = whiteAmazons[2];
-		amazons[3] = whiteAmazons[3];
+		amazons = whiteAmazons;
 	}
 	for (int a = 0; a < 4; a++)
 	{
@@ -54,20 +48,14 @@ S Board::isTerminal()
 std::vector<int> Board::legalMoves()
 {
 	std::vector<int> moves;
-	int amazons[4];
+	int *amazons;
 	if (turn == S::BLACK)
 	{
-		amazons[0] = blackAmazons[0];
-		amazons[1] = blackAmazons[1];
-		amazons[2] = blackAmazons[2];
-		amazons[3] = blackAmazons[3];
+		amazons = blackAmazons;
 	}
 	else
 	{
-		amazons[0] = whiteAmazons[0];
-		amazons[1] = whiteAmazons[1];
-		amazons[2] = whiteAmazons[2];
-		amazons[3] = whiteAmazons[3];
+		amazons = whiteAmazons;
 	}
 	for (int i = 0; i < 4; i++)
 	{
@@ -104,15 +92,8 @@ std::vector<int> Board::legalMoves()
 std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row, int col)
 {
 	std::vector<std::array<int, 2>> arrs;
-	S newBoard[10][10];
-	for (int i = 0; i < 10; i++)
-	{
-		for (int j = 0; j < 10; j++)
-		{
-			newBoard[i][j] = board[i][j];
-		}
-	}
-	newBoard[amazonX][amazonY] = S::EMPTY;
+	S moveColor = board[amazonX][amazonY];
+	board[amazonX][amazonY] = S::EMPTY;
 	for (int i = 0; i < 8; i++)
 	{
 		int newRow = row;
@@ -125,7 +106,7 @@ std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row,
 			{
 				break;
 			}
-			if (newBoard[newRow][newCol] == S::EMPTY)
+			if (board[newRow][newCol] == S::EMPTY)
 			{
 				std::array<int, 2> newMove = { newRow, newCol };
 				arrs.push_back(newMove);
@@ -136,6 +117,7 @@ std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row,
 			}
 		}
 	}
+	board[amazonX][amazonY] = moveColor;
 	return arrs;
 }
 void Board::applyMove(int index)
@@ -152,8 +134,7 @@ void Board::applyMove(int index)
 		int amazon;
 		for (int  i = 0; i < 4; i++)
 		{
-			int a = whiteAmazons[i];
-			if (a == amaIndex)
+			if (whiteAmazons[i] == amaIndex)
 			{
 				amazon = i;
 				break;
@@ -167,8 +148,7 @@ void Board::applyMove(int index)
 		int amazon;
 		for (int i = 0; i < 4; i++)
 		{
-			int a = blackAmazons[i];
-			if (a == amaIndex)
+			if (blackAmazons[i] == amaIndex)
 			{
 				amazon = i;
 				break;
@@ -184,48 +164,40 @@ void Board::applyMove(int index)
 }
 py::tuple Board::neuralworkInput()
 {
-	std::array<std::array<int, 10>,10> whitePos;
-	std::array<std::array<int, 10>, 10 > blackPos;
+	std::array<std::array<int, 10>,10> playerPos;
+	std::array<std::array<int, 10>, 10 > opponetPos;
 	std::array<std::array<int, 10>, 10 > arrowsPos;
-	std::array<std::array<int, 10>, 10 > turnColor;
 	for (int i = 0; i < 10; i++)
 	{
 		for (int j = 0; j < 10; j++)
 		{
-			switch (board[i][j])
+			if (board[i][j] == S::EMPTY)
 			{
-				case S::EMPTY:
-					whitePos[i][j] = 0;
-					blackPos[i][j] = 0;
-					arrowsPos[i][j] = 0;
-					break;
-				case S::WHITE:
-					whitePos[i][j] = 1;
-					blackPos[i][j] = 0;
-					arrowsPos[i][j] = 0;
-					break;
-				case S::BLACK:
-					whitePos[i][j] = 0;
-					blackPos[i][j] = 1;
-					arrowsPos[i][j] = 0;
-					break;
-				case S::ARROW:
-					whitePos[i][j] = 0;
-					blackPos[i][j] = 0;
-					arrowsPos[i][j] = 1;
-					break;
+				playerPos[i][j] = 0;
+				opponetPos[i][j] = 0;
+				arrowsPos[i][j] = 0;
+			}
+			else if (board[i][j] == turn)
+			{
+				playerPos[i][j] = 1;
+				opponetPos[i][j] = 0;
+				arrowsPos[i][j] = 0;
+			}
+			else if (board[i][j] == S::ARROW)
+			{
+				playerPos[i][j] = 0;
+				opponetPos[i][j] = 0;
+				arrowsPos[i][j] = 1;
+			}
+			else
+			{
+				playerPos[i][j] = 0;
+				opponetPos[i][j] = 1;
+				arrowsPos[i][j] = 0;
 			}
 		}
 	}
-	int color = turn == S::WHITE;
-	for (int i = 0; i < 10; i++)
-	{
-		for (int j = 0; j < 10; j++)
-		{
-			turnColor[i][j] = color;
-		}
-	}
-	return py::make_tuple(whitePos, blackPos, arrowsPos, turnColor);
+	return py::make_tuple(playerPos, opponetPos, arrowsPos);
 }
 
 
@@ -239,33 +211,27 @@ Board::Board()
 		}
 	}
 	board[0][3] = S::BLACK;
-	blackAmazons[0] = locationToIndex(0, 3);
+	blackAmazons[0] = 3;
 	board[0][6] = S::BLACK;
-	blackAmazons[1] = locationToIndex(0, 6);
+	blackAmazons[1] = 6;
 	board[3][0] = S::BLACK;
-	blackAmazons[2] = locationToIndex(3, 0);
+	blackAmazons[2] = 30;
 	board[3][9] = S::BLACK;
-	blackAmazons[3] = locationToIndex(3, 9);
+	blackAmazons[3] = 39;
 	board[6][0] = S::WHITE;
-	whiteAmazons[0] = locationToIndex(6, 0);
+	whiteAmazons[0] = 60;
 	board[6][9] = S::WHITE;
-	whiteAmazons[1] = locationToIndex(6, 9);
+	whiteAmazons[1] = 69;
 	board[9][3] = S::WHITE;
-	whiteAmazons[2] = locationToIndex(9, 3);
+	whiteAmazons[2] = 93;
 	board[9][6] = S::WHITE;
-	whiteAmazons[3] = locationToIndex(9, 6);
+	whiteAmazons[3] = 96;
 
 	turn = S::WHITE;
 }
 Board::Board(const Board& aBoard)
 {
-	for (int i = 0; i < 10; i++)
-	{
-		for (int j = 0; j < 10; j++)
-		{
-			board[i][j] = aBoard.board[i][j];
-		}
-	}
+	board = aBoard.board;
 	for (int i = 0; i < 4; i++)
 	{
 		blackAmazons[i] = aBoard.blackAmazons[i];

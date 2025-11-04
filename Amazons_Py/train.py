@@ -27,7 +27,7 @@ class ReinfLearn():
             rootEdge = mcts.Edge(None, None)
             rootEdge.N = 1
             rootNode = mcts.Node(g, rootEdge)
-            mctsSearcher = mcts.MCTS(self.model, 100)
+            mctsSearcher = mcts.MCTS(self.model, 50)
             moveProbs = mctsSearcher.search(rootNode)
             outputVec = {}
             for (move, prob) in moveProbs:
@@ -59,7 +59,7 @@ class ReinfLearn():
         else:
             winner = g.isTerminal()
             for i in range(0, len(valuesData)):
-                if(winner == Board.BLACK):
+                if(winner == State.BLACK):
                     valuesData[i][0] = valuesData[i][0] * -1.0
                 else:
                     valuesData[i][0] = valuesData[i][0] * 1.0
@@ -72,24 +72,36 @@ value_loss = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 for i in range(0, 10000000):
     learner = ReinfLearn(model)
-    allPos = []
-    allSrcProbs = []
-    allDstProbs = []
-    allArrProbs = []
-    allValues = []
+    allPos = np.empty(0)
+    allSrcProbs = np.empty(0)
+    allDstProbs = np.empty(0)
+    allArrProbs = np.empty(0)
+    allValues = np.empty(0)
     for j in tqdm(range(0,100)):
         pos, srcProbs,dstProbs, arrProbs, values = learner.playGame()
-        allPos += pos
-        allSrcProbs += srcProbs
-        allDstProbs += dstProbs
-        allArrProbs += arrProbs
-        allValues += values
+        if allPos.size == 0:
+            allPos = pos
+            allSrcProbs = srcProbs
+            allDstProbs = dstProbs
+            allArrProbs = arrProbs
+            allValues = values
+        else:
+            allPos = np.concatenate([pos, allPos], axis=0)
+            allSrcProbs = np.concatenate([srcProbs, allSrcProbs], axis=0)
+            allDstProbs = np.concatenate([dstProbs, allDstProbs], axis=0)
+            allArrProbs = np.concatenate([arrProbs, allArrProbs], axis=0)
+            allValues = np.concatenate([values, allValues], axis=0)
+        allPos = np.concatenate([np.flip(pos, axis=-1), allPos], axis=0)
+        allSrcProbs = np.concatenate([np.flip(srcProbs, axis=-1), allSrcProbs], axis=0)
+        allDstProbs = np.concatenate([np.flip(dstProbs, axis=-1), allDstProbs], axis=0)
+        allArrProbs = np.concatenate([np.flip(arrProbs, axis=-1), allArrProbs], axis=0)
+        allValues = np.concatenate([values, allValues], axis=0)
     allPos = np.array(allPos)
     allSrcProbs = np.array(allSrcProbs)
     allDstProbs = np.array(allDstProbs)
     allArrProbs = np.array(allArrProbs)
     allValues = np.array(allValues)
-    train_dataset = AmazonsModel(allPos, allSrcProbs, allDstProbs, allArrProbs, allValues)
+    train_dataset = AmazonsDataset(allPos, allSrcProbs, allDstProbs, allArrProbs, allValues)
     train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
     device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)

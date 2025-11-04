@@ -22,12 +22,12 @@ class AmazonsModel(nn.Module):
     def __init__(self):
         super(AmazonsModel, self).__init__()
         self.stem = nn.Sequential(
-            nn.Conv2d(4, 128, kernel_size=3, padding=1),
+            nn.Conv2d(3, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             )
         self.resblocks = nn.Sequential(
-            *[ResidualBlock(128) for _ in range(0, 4)]
+            *[ResidualBlock(128) for _ in range(0, 6)]
         )
         self.src_head = nn.Sequential(
             nn.Conv2d(128, 32, 3, padding=1),

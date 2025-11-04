@@ -8,8 +8,8 @@ from print_board import print_board
 
 def bot_vs_bot(board):
     while(board.isTerminal() == State.EMPTY):
-        print_board(board)
         board.applyMove(modelAgent.selectMove(board))
+        print_board(board)
     winner = board.isTerminal()
     return winner
 
@@ -23,4 +23,5 @@ model = model.to(device)
 
 modelAgent = Agent(model)
 g = Board()
+print_board(g)
 print(bot_vs_bot(g))

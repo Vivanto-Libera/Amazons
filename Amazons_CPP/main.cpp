@@ -15,20 +15,7 @@ PYBIND11_MODULE(Amazons, m)
 		.def("legalMoves", &Board::legalMoves)
 		.def("neuralworkInput", &Board::neuralworkInput)
 		.def("applyMove", &Board::applyMove)
-		.def("board", [](const Board& b)
-			{
-				py::list ls;
-				for (int i = 0; i < 10; i++)
-				{
-					py::list inner;
-					for (int j = 0; j < 10; j++)
-					{
-						inner.append(b.board[i][j]);
-					}
-					ls.append(inner);
-				}
-				return ls;
-			})
+		.def_readwrite("board", &Board::board)
 		.def_static("indexToMove", &Board::indexToMove)
 		.def_static("moveToIndex", &Board::moveToIndex)
 		.def_readwrite("turn", &Board::turn);

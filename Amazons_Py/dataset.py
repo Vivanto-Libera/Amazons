@@ -10,4 +10,4 @@ class AmazonsDataset(Dataset):
     def __len__(self):
         return len(self.pos)
     def __getitem__(self, idx):
-        return self.pos[idx], self.y_src[idx],self.y_sry_dstc[idx], self.y_arr[idx], self.y_value[idx]
+        return self.pos[idx], self.y_src[idx],self.y_dst[idx], self.y_arr[idx], self.y_value[idx]
