@@ -1,7 +1,7 @@
 from Amazons import Board
 import Amazons
 def print_board(aBoard):
-    board = aBoard.board()
+    board = aBoard.board
     rowIndex = '9876543210'
     colIndex = 'a  b  c  d  e  f  g  h  i  j'
     for row in range(0, 10):

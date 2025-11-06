@@ -1,4 +1,6 @@
-import copy
+cimport cython
+from libc.math cimport sqrt,pow
+cimport numpy as np
 import numpy as np
 import math
 from Amazons import Board
@@ -7,23 +9,41 @@ import random
 import torch
 from amazonsModel import AmazonsModel
 
-class Edge():
+ctypedef np.float32_t FLOAT32_t
+ctypedef np.int32_t INT32_t
+
+cdef class Edge():
+    cdef:
+        public Node parentNode
+        public object move
+        public int N
+        public float W
+        public float Q
+        public float P
     def __init__(self, move, parentNode):
         self.parentNode = parentNode
         self.move = move
         self.N = 0 #visit counts
-        self.W = 0 #sum of move values
-        self.Q = 0 #move value
-        self.P = 0 #prior probability
+        self.W = 0.0 #sum of move values
+        self.Q = 0.0 #move value
+        self.P = 0.0 #prior probability
 
-class Node():
+cdef class Node():
+    cdef:
+        public object board
+        public Edge parentEdge
+        public list childEdgeNode
     def __init__(self, board, parentEdge):
         self.board = board
         self.parentEdge = parentEdge
         self.childEdgeNode = []
 
-    def expand(self, network):
-        moves = self.board.legalMoves()
+    cpdef double expand(self, object network):
+        cdef list moves = self.board.legalMoves()
+        cdef int m
+        cdef object child_board
+        cdef Edge child_edge
+        cdef Node childNode
         for m in moves:
             child_board = Board(self.board)
             child_board.applyMove(m)
@@ -31,27 +51,41 @@ class Node():
             childNode = Node(child_board, child_edge)
             self.childEdgeNode.append((child_edge,childNode))
         network.eval()
-        device= torch.device("cpu")
+        cdef object device = torch.device("cpu")
         network = network.to(device)
-        board_state = torch.FloatTensor(self.board.neuralworkInput()).unsqueeze(0)
+        cdef object board_state = torch.FloatTensor(self.board.neuralworkInput()).unsqueeze(0)
         board_state = board_state.to(device)
+        cdef:
+            object q_src, q_arr,q_dst,q_vs
         with torch.no_grad():
             q_src,q_dst,q_arr,q_v = network(board_state)
-        prob_sum = 0.
-        for (edge,_) in self.childEdgeNode:
+        cdef float prob_sum = 0.0
+        cdef Edge edge
+        cdef Node _
+        cdef int i
+        cdef list m_idx
+        for i in range(len(self.childEdgeNode)):
+            edge, _ = self.childEdgeNode[i]
             m_idx = self.board.indexToMove(edge.move)
             edge.P = q_src[0, m_idx[0]*10+m_idx[1]] * q_dst[0, m_idx[2]*10+m_idx[3]] *q_arr[0, m_idx[4]*10+m_idx[5]]
             prob_sum += edge.P
-        for edge,_ in self.childEdgeNode:
-            edge.P /= prob_sum
-        v = q_v[0, 0]
+        if prob_sum > 0:
+            for i in range(len(self.childEdgeNode)):
+                edge, _ = self.childEdgeNode[i]
+                edge.P /= prob_sum
+        cdef float v = q_v[0, 0]
         return v
 
-    def isLeaf(self):
+    cpdef bint isLeaf(self):
         return self.childEdgeNode == []
-    
-class MCTS():
 
+cdef class MCTS():
+    cdef:
+        public object network
+        public Node rootNode
+        public double tau
+        public double c_puct
+        public int times
     def __init__(self, network, times):
         self.network = network
         self.rootNode = None
@@ -59,16 +93,26 @@ class MCTS():
         self.c_puct = 1.0 #some constant that adjust the impact of the overall bonus value u
         self.times = times
 
-    def uctValue(self, edge, parentN):
-        return self.c_puct * edge.P * (math.sqrt(parentN) / (1+edge.N))
+    @cython.cdivision(True)
+    cpdef float uctValue(self, Edge edge, int parentN):
+        return self.c_puct * edge.P * (sqrt(parentN) / (1+edge.N))
 
-    def select(self, node):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Node select(self, Node node):
+        cdef:
+            Node maxUctChild, child_node
+            double maxUctValue, uctVal, uctValChild
+            list allBestChilds
+            int idx,i
+            Edge edge
         if(node.isLeaf()):
             return node
         else:
             maxUctChild = None
-            maxUctValue = -100000000.
-            for edge, child_node in node.childEdgeNode:
+            maxUctValue = -100000000.0
+            for i in range(len(node.childEdgeNode)):
+                edge, child_node = node.childEdgeNode[i]
                 uctVal = self.uctValue(edge, edge.parentNode.parentEdge.N)
                 val = edge.Q
                 if(edge.parentNode.board.turn == State.BLACK):
@@ -78,7 +122,8 @@ class MCTS():
                     maxUctChild = child_node
                     maxUctValue = uctValChild
             allBestChilds = []
-            for edge, child_node in node.childEdgeNode:
+            for i in range(len(node.childEdgeNode)):
+                edge, child_node = node.childEdgeNode[i]
                 uctVal = self.uctValue(edge, edge.parentNode.parentEdge.N)
                 val = edge.Q
                 if(edge.parentNode.board.turn == State.BLACK):
@@ -94,8 +139,11 @@ class MCTS():
                     return self.select(allBestChilds[idx])
                 else:
                     return self.select(maxUctChild)
-                
-    def expandAndEvaluate(self, node):
+
+    cpdef void expandAndEvaluate(self, Node node):
+        cdef:
+            int winner
+            double v
         winner = node.board.isTerminal()
         if(winner != State.EMPTY):
             v = 0.0
@@ -108,7 +156,7 @@ class MCTS():
         v = node.expand(self.network)
         self.backup(v, node.parentEdge)
 
-    def backup(self, v, edge):
+    cpdef void backup(self, float v, Edge edge):
         edge.N += 1
         edge.W = edge.W + v
         edge.Q = edge.W / edge.N
@@ -116,7 +164,14 @@ class MCTS():
             if(edge.parentNode.parentEdge != None):
                 self.backup(v, edge.parentNode.parentEdge)
 
-    def search(self, rootNode):
+    cpdef list search(self, Node rootNode):
+        cdef:
+            int i, N_sum, j
+            double prob
+            Edge edge
+            Node node
+            tuple m_tuple
+            list m, moveProbs
         self.rootNode = rootNode
         self.rootNode.expand(self.network)
         for i in range(0, self.times):
@@ -124,10 +179,12 @@ class MCTS():
             self.expandAndEvaluate(selected_node)
         N_sum = 0
         moveProbs = []
-        for edge, _ in rootNode.childEdgeNode:
+        for j in range(len(rootNode.childEdgeNode)):
+            edge, _ = rootNode.childEdgeNode[j]
             N_sum += edge.N
-        for (edge, node) in rootNode.childEdgeNode:
-            prob = (edge.N ** (1 / self.tau)) / ((N_sum) ** (1/self.tau))
+        for j in range(len(rootNode.childEdgeNode)):
+            edge, node = rootNode.childEdgeNode[j]
+            prob = pow(edge.N, (1 / self.tau)) / pow(N_sum, (1/self.tau))
             m = Board.indexToMove(edge.move)
             m_tuple = (m[0]*10+m[1],m[2]*10+m[3],m[4]*10+m[5])
             moveProbs.append((m_tuple, prob))

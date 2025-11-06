@@ -75,7 +75,7 @@ std::vector<int> Board::legalMoves()
 				if (board[row][col] == S::EMPTY)
 				{
 					std::vector<std::array<int, 2>> arrs = arrows(rowAndCol[0],rowAndCol[1], row, col);
-					for (auto arr : arrs)
+					for (const auto& arr : arrs)
 					{
 						moves.push_back(moveToIndex(rowAndCol[0], rowAndCol[1], row, col, arr[0], arr[1]));
 					}
@@ -89,7 +89,7 @@ std::vector<int> Board::legalMoves()
 	}
 	return moves;
 }
-std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row, int col)
+inline std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row, int col)
 {
 	std::vector<std::array<int, 2>> arrs;
 	S moveColor = board[amazonX][amazonY];
@@ -108,8 +108,7 @@ std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row,
 			}
 			if (board[newRow][newCol] == S::EMPTY)
 			{
-				std::array<int, 2> newMove = { newRow, newCol };
-				arrs.push_back(newMove);
+				arrs.push_back(std::array<int, 2>{ newRow, newCol });
 			}
 			else
 			{
@@ -203,12 +202,9 @@ py::tuple Board::neuralworkInput()
 
 Board::Board()
 {
-	for (int i = 0; i < 10; i++)
+	for (auto& b : board)
 	{
-		for (int j = 0; j < 10; j++)
-		{
-			board[i][j] = S::EMPTY;
-		}
+		b.fill(S::EMPTY);
 	}
 	board[0][3] = S::BLACK;
 	blackAmazons[0] = 3;
@@ -240,25 +236,22 @@ Board::Board(const Board& aBoard)
 	turn = aBoard.turn;
 }
 
-int Board::locationToIndex(int x, int y)
+inline int Board::locationToIndex(int x, int y)
 {
 	return 10 * x + y;
 }
-std::array<int, 2> Board::indextoLocation(int index)
+inline std::array<int, 2> Board::indextoLocation(int index)
 {
 	std::array<int, 2> loc;
 	loc[0] = index / 10;
 	loc[1] = index % 10;
 	return loc;
 }
-int Board::moveToIndex(int fromR, int fromC, int toR, int toC, int arrR, int arrC)
+inline int Board::moveToIndex(int fromR, int fromC, int toR, int toC, int arrR, int arrC)
 {
-	int from = fromR * 10 + fromC;
-	int to = toR * 10 + toC;
-	int arr = arrR * 10 + arrC;
-	return from * 10000 + to * 100 + arr;
+	return (fromR * 10 + fromC) * 10000 + (toR * 10 + toC) * 100 + arrR * 10 + arrC;
 }
-std::array<int, 6> Board::indexToMove(int index)
+inline std::array<int, 6> Board::indexToMove(int index)
 {
 	std::array<int, 6> move;
 	for (int i = 5; i >= 0; i--)
