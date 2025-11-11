@@ -38,12 +38,13 @@ cdef class Node():
         self.parentEdge = parentEdge
         self.childEdgeNode = []
 
-    cpdef double expand(self, object network):
+    cpdef double expand(self, object network, bint isRoot=False):
         cdef list moves = self.board.legalMoves()
         cdef int m
         cdef object child_board
         cdef Edge child_edge
         cdef Node childNode
+        cdef np.ndarray dirichlet
         for m in moves:
             child_board = Board(self.board)
             child_board.applyMove(m)
@@ -51,7 +52,7 @@ cdef class Node():
             childNode = Node(child_board, child_edge)
             self.childEdgeNode.append((child_edge,childNode))
         network.eval()
-        cdef object device = torch.device("cpu")
+        cdef object device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         network = network.to(device)
         cdef object board_state = torch.FloatTensor(self.board.neuralworkInput()).unsqueeze(0)
         board_state = board_state.to(device)
@@ -64,10 +65,14 @@ cdef class Node():
         cdef Node _
         cdef int i
         cdef list m_idx
+        if isRoot:
+            dirichlet = np.random.dirichlet([0.15] * len(self.childEdgeNode))
         for i in range(len(self.childEdgeNode)):
             edge, _ = self.childEdgeNode[i]
             m_idx = self.board.indexToMove(edge.move)
             edge.P = q_src[0, m_idx[0]*10+m_idx[1]] * q_dst[0, m_idx[2]*10+m_idx[3]] *q_arr[0, m_idx[4]*10+m_idx[5]]
+            if isRoot:
+                edge.P = edge.P * 0.75 + 0.25 * dirichlet[i]
             prob_sum += edge.P
         if prob_sum > 0:
             for i in range(len(self.childEdgeNode)):
@@ -90,7 +95,7 @@ cdef class MCTS():
         self.network = network
         self.rootNode = None
         self.tau = 1.0
-        self.c_puct = 1.0 #some constant that adjust the impact of the overall bonus value u
+        self.c_puct = 1.5 #some constant that adjust the impact of the overall bonus value u
         self.times = times
 
     @cython.cdivision(True)
@@ -173,7 +178,7 @@ cdef class MCTS():
             tuple m_tuple
             list m, moveProbs
         self.rootNode = rootNode
-        self.rootNode.expand(self.network)
+        self.rootNode.expand(self.network, isRoot=True)
         for i in range(0, self.times):
             selected_node = self.select(rootNode)
             self.expandAndEvaluate(selected_node)

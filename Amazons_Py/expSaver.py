@@ -25,7 +25,7 @@ class ReinfLearn():
             rootEdge = mcts.Edge(None, None)
             rootEdge.N = 1
             rootNode = mcts.Node(g, rootEdge)
-            mctsSearcher = mcts.MCTS(self.model, 2)
+            mctsSearcher = mcts.MCTS(self.model, 100)
             moveProbs = mctsSearcher.search(rootNode)
             outputVec = {}
             for (move, prob) in moveProbs:
@@ -64,18 +64,18 @@ class ReinfLearn():
         return (positionsData, srcProbsData, dstProbsData, arrProbsData, valuesData)
     
 model = AmazonsModel()
-model.load_state_dict(torch.load("new_model.pt"))
 thread = input("Which thread:")
 i = 0
 while True:
     if os.path.exists("model_exp"+str(i)+".pt"):
+        model.load_state_dict(torch.load(f"model_exp{i}.pt"))
         learner = ReinfLearn(model)
         allPos = np.empty(0)
         allSrcProbs = np.empty(0)
         allDstProbs = np.empty(0)
         allArrProbs = np.empty(0)
         allValues = np.empty(0)
-        for j in tqdm(range(0,1)):
+        for j in tqdm(range(0,10)):
             pos, srcProbs,dstProbs, arrProbs, values = learner.playGame()
             if allPos.size == 0:
                 allPos = pos

@@ -13,16 +13,21 @@ model.load_state_dict(torch.load("model_exp0.pt"))
 i = 0
 policy_loss = nn.CrossEntropyLoss()
 value_loss = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+threads = 16
 while True:
-
-    if os.path.exists(f'exp_tr0_it{i}.npz') and os.path.exists(f'exp_tr1_it{i}.npz') and os.path.exists(f'exp_tr2_it{i}.npz') and os.path.exists(f'exp_tr3_it{i}.npz') and os.path.exists(f'exp_tr4_it{i}.npz'):
+    expSaved = True
+    for j in range(0, threads):
+        if not os.path.exists(f'exp_tr{j}_it{i}.npz'):
+            expSaved = False
+            break
+    if expSaved:
         allPos = np.empty(0)
         allSrcProbs = np.empty(0)
         allDstProbs = np.empty(0)
         allArrProbs = np.empty(0)
         allValues = np.empty(0)
-        for j in range(0, 5):
+        for j in range(0, threads):
             data = np.load(f'exp_tr{j}_it{i}.npz')
             if j == 0:
                 allPos = data['pos']
@@ -37,7 +42,7 @@ while True:
                 allArrProbs = np.concatenate([data['arr'], allArrProbs], axis=0)
                 allValues = np.concatenate([data['values'], allValues], axis=0)
         train_dataset = AmazonsDataset(allPos, allSrcProbs, allDstProbs, allArrProbs, allValues)
-        train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
         device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
         model.train()
@@ -54,11 +59,18 @@ while True:
                 loss_policy += policy_loss(pred_dst, batch_dst)
                 loss_policy += policy_loss(pred_arr, batch_arr)
                 loss_value = value_loss(pred_value, batch_val)
-                loss = loss_policy + loss_value
+                loss = loss_policy + loss_value * 0.5
                 loss.backward()
                 optimizer.step()
         i += 1
         torch.save(model.state_dict(), "model_exp"+str(i)+".pt")
         print("model saved")
+        allPos = None
+        allSrcProbs = None
+        allDstProbs = None
+        allArrProbs = None
+        allValues = None
+        train_dataset = None
+        train_loader = None
     else:
-        time.sleep(600)
+        time.sleep(120)

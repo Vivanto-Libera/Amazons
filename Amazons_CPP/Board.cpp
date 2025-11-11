@@ -18,19 +18,16 @@ S Board::isTerminal()
 	}
 	for (int a = 0; a < 4; a++)
 	{
-		int amazon = amazons[a];
-		std::array<int, 2> rowAndCol = indextoLocation(amazon);
-		int row = rowAndCol[0];
-		int col = rowAndCol[1];
+		std::array<int, 2> rowAndCol = indextoLocation(amazons[a]);
 		for (int i = 0; i < 8; i++)
 		{
-			int newRow = row + Board::rowDirection[i];
-			int newCol = col + Board::colDirection[i];
-			if (newRow < 0 || newRow > 9 || newCol < 0 || newCol > 9)
+			int row = rowAndCol[0] + Board::rowDirection[i];
+			int col = rowAndCol[1] + Board::colDirection[i];
+			if (row < 0 || row > 9 || col < 0 || col > 9)
 			{
 				continue;
 			}
-			if (board[newRow][newCol] == S::EMPTY)
+			if (board[row][col] == S::EMPTY)
 			{
 				return S::EMPTY;
 			}
@@ -89,7 +86,7 @@ std::vector<int> Board::legalMoves()
 	}
 	return moves;
 }
-inline std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row, int col)
+std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, int row, int col)
 {
 	std::vector<std::array<int, 2>> arrs;
 	S moveColor = board[amazonX][amazonY];
@@ -108,7 +105,7 @@ inline std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, i
 			}
 			if (board[newRow][newCol] == S::EMPTY)
 			{
-				arrs.push_back(std::array<int, 2>{ newRow, newCol });
+				arrs.push_back(std::array<int, 2>{newRow, newCol});
 			}
 			else
 			{
@@ -122,12 +119,8 @@ inline std::vector<std::array<int, 2>> Board::arrows(int amazonX, int amazonY, i
 void Board::applyMove(int index)
 {
 	std::array<int, 6> moveNums = indexToMove(index);
-	int amazonRow = moveNums[0];
-	int amazonCol = moveNums[1];
-	int row = moveNums[2];
-	int col = moveNums[3];
-	board[row][col] = turn;
-	int amaIndex = locationToIndex(amazonRow, amazonCol);
+	board[moveNums[2]][moveNums[3]] = turn;
+	int amaIndex = locationToIndex(moveNums[0], moveNums[1]);
 	if (turn == S::WHITE)
 	{
 		int amazon;
@@ -139,7 +132,7 @@ void Board::applyMove(int index)
 				break;
 			}
 		}
-		whiteAmazons[amazon] = locationToIndex(row, col);
+		whiteAmazons[amazon] = locationToIndex(moveNums[2], moveNums[3]);
 		turn = S::BLACK;
 	}
 	else
@@ -153,13 +146,11 @@ void Board::applyMove(int index)
 				break;
 			}
 		}
-		blackAmazons[amazon] = locationToIndex(row, col);
+		blackAmazons[amazon] = locationToIndex(moveNums[2], moveNums[3]);
 		turn = S::WHITE;
 	}
-	board[amazonRow][amazonCol] = S::EMPTY;
-	int arrRow = moveNums[4];
-	int arrCol = moveNums[5];
-	board[arrRow][arrCol] = S::ARROW;
+	board[moveNums[0]][moveNums[1]] = S::EMPTY;
+	board[moveNums[4]][moveNums[5]] = S::ARROW;
 }
 py::tuple Board::neuralworkInput()
 {
